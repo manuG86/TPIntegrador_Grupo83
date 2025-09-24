@@ -2,47 +2,74 @@ package LibroFicha_entities;
 
 public class Libro {
     private Long id;
-    private boolean eliminado;
+    private Boolean eliminado;
     private String titulo;
     private String autor;
     private String editorial;
     private Integer anioEdicion;
-    private FichaBibliografica fichaBibliografica; // A -> B (1..1) unidireccional
 
-    public Libro() {}
+    // Constructor vacío
+    public Libro() {
+    }
 
-    public Libro(Long id, boolean eliminado, String titulo, String autor,
-                 String editorial, Integer anioEdicion, FichaBibliografica fichaBibliografica) {
+    // Constructor con todos los atributos
+    public Libro(Long id, Boolean eliminado, String titulo, String autor, String editorial, Integer anioEdicion) {
         this.id = id;
         this.eliminado = eliminado;
         this.titulo = titulo;
         this.autor = autor;
         this.editorial = editorial;
         this.anioEdicion = anioEdicion;
-        this.fichaBibliografica = fichaBibliografica;
     }
 
-    // Getters y setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // Getters y Setters
+    public Long getId() {
+        return id;
+    }
 
-    public boolean isEliminado() { return eliminado; }
-    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
+    public Boolean getEliminado() {
+        return eliminado;
+    }
 
-    public String getAutor() { return autor; }
-    public void setAutor(String autor) { this.autor = autor; }
+    public void setEliminado(Boolean eliminado) {
+        this.eliminado = eliminado;
+    }
 
-    public String getEditorial() { return editorial; }
-    public void setEditorial(String editorial) { this.editorial = editorial; }
+    public String getTitulo() {
+        return titulo;
+    }
 
-    public Integer getAnioEdicion() { return anioEdicion; }
-    public void setAnioEdicion(Integer anioEdicion) { this.anioEdicion = anioEdicion; }
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
 
-    public FichaBibliografica getFichaBibliografica() { return fichaBibliografica; }
-    public void setFichaBibliografica(FichaBibliografica fichaBibliografica) { this.fichaBibliografica = fichaBibliografica; }
+    public String getAutor() {
+        return autor;
+    }
+
+    public void setAutor(String autor) {
+        this.autor = autor;
+    }
+
+    public String getEditorial() {
+        return editorial;
+    }
+
+    public void setEditorial(String editorial) {
+        this.editorial = editorial;
+    }
+
+    public Integer getAnioEdicion() {
+        return anioEdicion;
+    }
+
+    public void setAnioEdicion(Integer anioEdicion) {
+        this.anioEdicion = anioEdicion;
+    }
 
     @Override
     public String toString() {
@@ -53,7 +80,10 @@ public class Libro {
                 ", autor='" + autor + '\'' +
                 ", editorial='" + editorial + '\'' +
                 ", anioEdicion=" + anioEdicion +
-                ", fichaBibliografica=" + fichaBibliografica +
                 '}';
+    }
+
+    public boolean isEliminado() {
+        return eliminado; 
     }
 }

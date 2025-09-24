@@ -7,6 +7,8 @@ import LibroFicha_entities.FichaBibliografica;
 import LibroFicha_entities.Libro;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 
 public class LibroService implements GenericService<Libro> {
 
@@ -18,23 +20,30 @@ public class LibroService implements GenericService<Libro> {
         this.fichaDao = fichaDao;
     }
 
+    // Método de la interfaz
     @Override
     public void insertar(Libro libro) throws Exception {
+        insertar(libro, null); // llama a la versión con ficha nula
+    }
+
+    // Sobrecarga para insertar libro + ficha
+    public void insertar(Libro libro, FichaBibliografica ficha) throws Exception {
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            FichaBibliografica ficha = libro.getFichaBibliografica();
+            // Insertar el libro
+            libroDao.crear(conn, libro);
+
+            // Insertar ficha asociada si existe
             if (ficha != null) {
-                // Aquí llamamos a fichaDao.crear(conn, ficha) -> la implementación JDBC debe soportar esto
-                // fichaDao.crear(conn, ficha);
+                ficha.setLibroId(libro.getId());
+                fichaDao.crear(conn, ficha);
             }
 
-            // libroDao.crear(conn, libro);
-
             conn.commit();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             if (conn != null) conn.rollback();
             throw e;
         } finally {
@@ -45,8 +54,74 @@ public class LibroService implements GenericService<Libro> {
         }
     }
 
-    @Override public void actualizar(Libro t) throws Exception { /* TODO */ }
-    @Override public void eliminar(Long id) throws Exception { /* TODO */ }
-    @Override public Libro getById(Long id) throws Exception { return null; /* TODO */ }
-    @Override public java.util.List<Libro> getAll() throws Exception { return null; /* TODO */ }
+    // Método de la interfaz
+    @Override
+    public void actualizar(Libro libro) throws Exception {
+        actualizar(libro, null); // llama a la versión con ficha nula
+    }
+
+    // Sobrecarga para actualizar libro + ficha
+    public void actualizar(Libro libro, FichaBibliografica ficha) throws Exception {
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            libroDao.actualizar(conn, libro);
+
+            if (ficha != null) {
+                ficha.setLibroId(libro.getId());
+                fichaDao.actualizar(conn, ficha);
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback();
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
+
+    @Override
+    public void eliminar(Long id) throws Exception {
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // Primero eliminar las fichas asociadas
+            fichaDao.eliminarPorLibroId(conn, id);
+
+            // Luego eliminar el libro
+            libroDao.eliminar(conn, id);
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback();
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
+
+    @Override
+    public Libro getById(Long id) throws Exception {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return libroDao.getById(conn, id);
+        }
+    }
+
+    @Override
+    public List<Libro> getAll() throws Exception {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return libroDao.getAll(conn);
+        }
+    }
 }
