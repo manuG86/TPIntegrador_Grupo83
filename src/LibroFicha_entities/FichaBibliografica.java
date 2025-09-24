@@ -2,100 +2,56 @@ package LibroFicha_entities;
 
 public class FichaBibliografica {
     private Long id;
-    private Boolean eliminado;
+    private boolean eliminado;
     private String isbn;
     private String clasificacionDewey;
     private String estanteria;
     private String idioma;
-    private Long libroId; // relación con Libro
 
     // Constructor vacío
-    public FichaBibliografica() {
-    }
+    public FichaBibliografica() { }
 
     // Constructor con todos los atributos
-    public FichaBibliografica(Long id, Boolean eliminado, String isbn, String clasificacionDewey,
-                              String estanteria, String idioma, Long libroId) {
+    public FichaBibliografica(Long id, boolean eliminado, String isbn,
+                              String clasificacionDewey, String estanteria, String idioma) {
         this.id = id;
         this.eliminado = eliminado;
         this.isbn = isbn;
         this.clasificacionDewey = clasificacionDewey;
         this.estanteria = estanteria;
         this.idioma = idioma;
-        this.libroId = libroId;
     }
 
     // Getters y Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public boolean getEliminado() { return eliminado; }
+    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
+    public boolean isEliminado() { return eliminado; }
 
-    public Boolean getEliminado() {
-        return eliminado;
-    }
+    public String getIsbn() { return isbn; }
+    public void setIsbn(String isbn) { this.isbn = isbn; }
 
-    public void setEliminado(Boolean eliminado) {
-        this.eliminado = eliminado;
-    }
+    public String getClasificacionDewey() { return clasificacionDewey; }
+    public void setClasificacionDewey(String clasificacionDewey) { this.clasificacionDewey = clasificacionDewey; }
 
-    public String getIsbn() {
-        return isbn;
-    }
+    public String getEstanteria() { return estanteria; }
+    public void setEstanteria(String estanteria) { this.estanteria = estanteria; }
 
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
-    }
-
-    public String getClasificacionDewey() {
-        return clasificacionDewey;
-    }
-
-    public void setClasificacionDewey(String clasificacionDewey) {
-        this.clasificacionDewey = clasificacionDewey;
-    }
-
-    public String getEstanteria() {
-        return estanteria;
-    }
-
-    public void setEstanteria(String estanteria) {
-        this.estanteria = estanteria;
-    }
-
-    public String getIdioma() {
-        return idioma;
-    }
-
-    public void setIdioma(String idioma) {
-        this.idioma = idioma;
-    }
-
-    public Long getLibroId() {
-        return libroId;
-    }
-
-    public void setLibroId(Long libroId) {
-        this.libroId = libroId;
-    }
+    public String getIdioma() { return idioma; }
+    public void setIdioma(String idioma) { this.idioma = idioma; }
 
     @Override
     public String toString() {
+        String isbnStr = (isbn != null && !isbn.isEmpty()) ? isbn : "sin_isbn";
         return "FichaBibliografica{" +
-                "id=" + id +
-                ", eliminado=" + eliminado +
-                ", isbn='" + isbn + '\'' +
-                ", clasificacionDewey='" + clasificacionDewey + '\'' +
-                ", estanteria='" + estanteria + '\'' +
-                ", idioma='" + idioma + '\'' +
-                ", libroId=" + libroId +
-                '}';
-    }
-
-    public boolean isEliminado() {
-        return eliminado;
+               "id=" + id +
+               ", eliminado=" + eliminado +
+               ", isbn='" + isbnStr + '\'' +
+               ", clasificacionDewey='" + clasificacionDewey + '\'' +
+               ", estanteria='" + estanteria + '\'' +
+               ", idioma='" + idioma + '\'' +
+               '}';
     }
 }
