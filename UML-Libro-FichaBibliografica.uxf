@@ -1,0 +1,57 @@
+<diagram program="umletino" version="15.1"><zoom_level>8</zoom_level><element><id>UMLClass</id><coordinates><x>8</x><y>0</y><w>632</w><h>328</h></coordinates><panel_attributes>Libro
+--
+- id : Long
+- eliminado : Boolean
+- titulo : String
+- autor : String
+- editorial : String
+- anioEdicion : Integer
+- fichaBibliografica : FichaBibliografica
+--
++ Libro()
++ Libro(id: Long, eliminado: Boolean, titulo: String, autor: String, editorial: String, anioEdicion: Integer, fichaBibliografica: FichaBibliografica)
++ getId() : Long
++ setId(Long) : void
++ getEliminado() : Boolean
++ setEliminado(Boolean) : void
++ getTitulo() : String
++ setTitulo(String) : void
++ getAutor() : String
++ setAutor(String) : void
++ getEditorial() : String
++ setEditorial(String) : void
++ getAnioEdicion() : Integer
++ setAnioEdicion(Integer) : void
++ getFichaBibliografica() : FichaBibliografica
++ setFichaBibliografica(FichaBibliografica) : void
++ isEliminado() : boolean
++ toString() : String
+
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>48</x><y>432</y><w>560</w><h>288</h></coordinates><panel_attributes>FichaBibliografica
+--
+- id : Long
+- eliminado : Boolean
+- isbn : String
+- clasificacionDewey : String
+- estanteria : String
+- idioma : String
+--
++ FichaBibliografica()
++ FichaBibliografica(id: Long, eliminado: Boolean, isbn: String, clasificacionDewey: String, estanteria: String, idioma: String)
++ getId() : Long
++ setId(Long) : void
++ getEliminado() : Boolean
++ setEliminado(Boolean) : void
++ getIsbn() : String
++ setIsbn(String) : void
++ getClasificacionDewey() : String
++ setClasificacionDewey(String) : void
++ getEstanteria() : String
++ setEstanteria(String) : void
++ getIdioma() : String
++ setIdioma(String) : void
++ isEliminado() : boolean
++ toString() : String
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>320</x><y>320</y><w>104</w><h>128</h></coordinates><panel_attributes>lt=&lt;&lt;-
+m1=1
+fichaBibliografica</panel_attributes><additional_attributes>10;140;10;10</additional_attributes></element></diagram>

@@ -17,7 +17,7 @@ CREATE TABLE libro (
     titulo VARCHAR(150) NOT NULL,
     autor VARCHAR(120) NOT NULL,
     editorial VARCHAR(100),
-    anio_edicion INT
+    anioEdicion INT
 );
 
 -- Tabla FichaBibliografica (B)
@@ -25,10 +25,10 @@ CREATE TABLE ficha_bibliografica (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     eliminado BOOLEAN DEFAULT FALSE,
     isbn VARCHAR(17) UNIQUE NOT NULL,
-    clasificacion_dewey VARCHAR(20),
+    clasificacionDewey VARCHAR(20),
     estanteria VARCHAR(20),
     idioma VARCHAR(30),
-    libro_id BIGINT UNIQUE, -- Relación 1 a 1 con libro
+    libro_id BIGINT NOT NULL UNIQUE, -- Relación 1 a 1 con libro
     CONSTRAINT fk_ficha_libro FOREIGN KEY (libro_id)
         REFERENCES libro(id)
         ON DELETE CASCADE
