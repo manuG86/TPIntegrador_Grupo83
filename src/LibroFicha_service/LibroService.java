@@ -2,7 +2,6 @@ package LibroFicha_service;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.Year;
 import java.util.List;
 
 import LibroFicha_config.DatabaseConnection;
@@ -12,75 +11,37 @@ import LibroFicha_entities.FichaBibliografica;
 import LibroFicha_entities.Libro;
 
 /**
- * Servicio de Libro (capa Service)
- * --------------------------------
- * - Aplica reglas de negocio y validaciones.
- * - Orquesta transacciones (setAutoCommit(false) / commit / rollback).
- * - Llama a los DAO, que se encargan de hablar con la base de datos.
- * 
- * Importante: la consigna pide que la lógica/validaciones estén en Service
- * y que el DAO solo haga persistencia (PreparedStatement, SQL).
+ * Service de Libro
+ * - Orquesta transacciones (setAutoCommit(false)/commit/rollback)
+ * - Aplica reglas de negocio/validaciones
+ * - Usa SIEMPRE la MISMA Connection para que todos los DAOs participen
+ *   de una sola transaccion.
+ *
+ * Nota al equipo: mantenemos "baja logica" (eliminado=true), por eso
+ * cuando "eliminamos" un Libro tambien marcamos como eliminado su Ficha.
  */
 public class LibroService implements GenericService<Libro> {
 
-    // DAOs concretos (podrían inyectarse con constructor si quisiéramos testear)
-    private final LibroDaoImpl libroDao = new LibroDaoImpl();
-    private final FichaBibliograficaDaoImpl fichaDao = new FichaBibliograficaDaoImpl();
+    // DAOs usados por el service
+    private final LibroDaoImpl libroDao;
+    private final FichaBibliograficaDaoImpl fichaDao;
 
-    // =========================================================
-    // VALIDACIONES DE NEGOCIO (simples y claras)
-    // =========================================================
-
-    /**
-     * Valida un Libro antes de persistirlo/actualizarlo.
-     * Reglas mínimas: título y autor obligatorios; año dentro de un rango razonable.
-     */
-    private void validarLibro(Libro libro) {
-        if (libro == null) throw new IllegalArgumentException("Libro no puede ser null");
-
-        if (libro.getTitulo() == null || libro.getTitulo().isBlank()) {
-            throw new IllegalArgumentException("Título obligatorio");
-        }
-        if (libro.getAutor() == null || libro.getAutor().isBlank()) {
-            throw new IllegalArgumentException("Autor obligatorio");
-        }
-
-        // Año opcional, pero si viene, debe estar en rango [1450..año actual].
-        if (libro.getAnioEdicion() != null) {
-            int y = libro.getAnioEdicion();
-            int current = Year.now().getValue();
-            if (y < 1450 || y > current) {
-                throw new IllegalArgumentException("Año de edición fuera de rango (1450.." + current + ")");
-            }
-        }
+    // Constructor por defecto (crea los DAO)
+    public LibroService() {
+        this.libroDao  = new LibroDaoImpl();
+        this.fichaDao  = new FichaBibliograficaDaoImpl();
     }
 
-    /**
-     * Valida una FichaBibliografica. Para este TFI el ISBN es obligatorio y
-     * validamos un formato simple: ISBN-10 o ISBN-13 (permitimos guiones/espacios).
-     */
-    private void validarFicha(FichaBibliografica ficha) {
-        if (ficha == null) throw new IllegalArgumentException("Ficha no puede ser null");
-
-        String raw = (ficha.getIsbn() == null ? "" : ficha.getIsbn()).replaceAll("[- ]", "");
-        boolean isbn10 = raw.matches("\\d{9}[\\dX]"); // 10 (el último puede ser X)
-        boolean isbn13 = raw.matches("\\d{13}");      // 13 dígitos
-        if (!(isbn10 || isbn13)) {
-            throw new IllegalArgumentException("ISBN debe ser ISBN-10 (10) o ISBN-13 (13) válido");
-        }
+    // Constructor para inyectar DAOs (tests / mock)
+    public LibroService(LibroDaoImpl libroDao, FichaBibliograficaDaoImpl fichaDao) {
+        this.libroDao = libroDao;
+        this.fichaDao = fichaDao;
     }
 
-    // =========================================================
-    // CRUD BÁSICO de LIBRO (con transacciones)
-    // =========================================================
+    /* =========================================================
+       CRUD basico de Libro (con transacciones)
+       ========================================================= */
 
-    /**
-     * Inserta un Libro solo (sin ficha). La transacción es simple:
-     * - autocommit=false
-     * - crear libro
-     * - commit
-     * (si falla, rollback)
-     */
     @Override
     public Long insertar(Libro libro) throws Exception {
         validarLibro(libro);
@@ -88,23 +49,21 @@ public class LibroService implements GenericService<Libro> {
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false); // 1) inicio de transacción
+            conn.setAutoCommit(false);
 
-            Long id = libroDao.crear(conn, libro);    // 2) persisto Libro
+            // Creamos el libro (el DAO setea el id en la entidad y retorna el id)
+            Long id = libroDao.crear(conn, libro);
 
-            conn.commit();                            // 3) si salió todo bien, confirmo
+            conn.commit();
             return id;
         } catch (Exception e) {
-            rollbackSilencioso(conn); // vuelvo todo atrás
-            throw new RuntimeException("Error insertando Libro (rollback ejecutado): " + e.getMessage(), e);
+            rollbackSilencioso(conn);
+            throw new RuntimeException("Error insertando Libro (rollback): " + e.getMessage(), e);
         } finally {
-            restaurarYCerrar(conn);   // dejo la conexión limpia
+            restaurarYCerrar(conn);
         }
     }
 
-    /**
-     * Actualiza los datos de un Libro.
-     */
     @Override
     public boolean actualizar(Libro libro) throws Exception {
         validarLibro(libro);
@@ -126,11 +85,6 @@ public class LibroService implements GenericService<Libro> {
         }
     }
 
-    /**
-     * Eliminación lógica del Libro y su Ficha (si existe).
-     * Regla: como es 1→1, cuando "borramos" el Libro, también
-     * "borramos" lógicamente la Ficha asociada.
-     */
     @Override
     public void eliminar(Long id) throws Exception {
         if (id == null) throw new IllegalArgumentException("Id no puede ser null");
@@ -140,75 +94,83 @@ public class LibroService implements GenericService<Libro> {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            // Primero la ficha (lado B) por libro_id
-            fichaDao.eliminarPorLibroId(conn, id);
+            // Nota: como nuestra "eliminacion" es logica (UPDATE ... SET eliminado=TRUE),
+            // el ON DELETE CASCADE no aplica. Por eso primero "bajamos" la ficha del libro.
+            fichaDao.eliminarPorLibroId(conn, id.longValue());
 
-            // Luego el libro (lado A)
-            libroDao.eliminar(conn, id);
+            // Luego "bajamos" el libro
+            libroDao.eliminar(conn, id.longValue());
 
             conn.commit();
         } catch (Exception e) {
             rollbackSilencioso(conn);
-            throw new RuntimeException("Error al eliminar Libro/Ficha (rollback): " + e.getMessage(), e);
+            throw new RuntimeException("Error eliminando Libro (rollback): " + e.getMessage(), e);
         } finally {
             restaurarYCerrar(conn);
         }
     }
 
-    /**
-     * Obtiene un Libro por su ID (si está activo).
-     * NOTA: acá no abrimos transacción porque es una lectura simple.
-     */
     @Override
     public Libro getById(Long id) throws Exception {
         if (id == null) throw new IllegalArgumentException("Id no puede ser null");
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            return libroDao.leer(conn, id);
+        Connection conn = null;
+        try {
+            // Para lectura simple no necesito transaccion, pero mantengo el patron
+            conn = DatabaseConnection.getConnection();
+            return libroDao.leer(conn, id.longValue());
+        } catch (Exception e) {
+            throw new RuntimeException("Error leyendo Libro: " + e.getMessage(), e);
+        } finally {
+            cerrarSilencioso(conn);
         }
     }
 
-    /**
-     * Lista todos los Libros activos (eliminado = FALSE).
-     */
     @Override
     public List<Libro> getAll() throws Exception {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            return libroDao.leerTodos(conn);
-        }
-    }
-
-    // =========================================================
-    // OPERACIONES COMPUESTAS (Libro + Ficha en la MISMA transacción)
-    // =========================================================
-
-    /**
-     * Inserta Libro + Ficha en una sola transacción.
-     * Orden elegido por nosotros: A→B (primero Libro, después Ficha).
-     * Justificación: ambos quedan atómicamente creados, y seteamos libroId en la Ficha.
-     * (En el informe explicamos que la consigna sugiere B→A, pero esta variante es válida
-     *  si se hace bajo la misma transacción y se documenta.)
-     */
-    public void insertarConFicha(Libro libro, FichaBibliografica ficha) throws Exception {
-        validarLibro(libro);
-        validarFicha(ficha);
-
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false);  // transacción única para ambas inserciones
+            return libroDao.leerTodos(conn);
+        } catch (Exception e) {
+            throw new RuntimeException("Error listando Libros: " + e.getMessage(), e);
+        } finally {
+            cerrarSilencioso(conn);
+        }
+    }
+
+    /* =========================================================
+       CASOS COMPUESTOS (Libro + Ficha) CON TRANSACCION
+       ========================================================= */
+
+    /**
+     * Caso FELIZ de insercion 1->1:
+     * 1) Creo Libro -> obtengo id
+     * 2) Seteo libroId en Ficha
+     * 3) Creo Ficha
+     * 4) commit
+     */
+    public void insertarConFicha(Libro libro, FichaBibliografica ficha) throws Exception {
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            validarLibro(libro);
+            validarFicha(ficha);
 
             // 1) Creo Libro y obtengo id
             Long libroId = libroDao.crear(conn, libro);
             libro.setId(libroId);
 
-            // 2) Vinculo Ficha con Libro (FK única libro_id)
+            // 2) Vinculo Ficha con Libro (FK unica libro_id)
             ficha.setLibroId(libroId);
 
-            // 3) Creo Ficha
+            // 3) Creo Ficha (el DAO setea id en la entidad)
             fichaDao.crear(conn, ficha);
 
-            // 4) Confirmo la transacción
+            // 4) Guardar cambios
             conn.commit();
+
         } catch (Exception e) {
             rollbackSilencioso(conn);
             throw new RuntimeException("Fallo al insertar Libro + Ficha (rollback ejecutado): " + e.getMessage(), e);
@@ -218,60 +180,127 @@ public class LibroService implements GenericService<Libro> {
     }
 
     /**
-     * Variante con "rollback simulado" para mostrar en el video del TFI.
-     * La idea es provocar un error luego de hacer las operaciones, para ver el rollback en acción.
-     * (Podemos adaptarlo para forzar una excepción en el medio y mostrar cómo NO queda nada en BD).
+     * Caso con ROLLBACK SIMULADO (para el video):
+     * hacemos todo igual que insertarConFicha pero lanzamos un error a proposito
+     * al final, para demostrar que NO queda nada en BD.
      */
-    public void insertarConFichaConRollbackSimulado(Libro libro, FichaBibliografica ficha) {
+    public void insertarConFichaConRollbackSimulado(Libro libro, FichaBibliografica ficha) throws Exception {
+        Connection conn = null;
         try {
-            // Reutilizamos la operación compuesta normal
-            insertarConFicha(libro, ficha);
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
 
-            // Simulamos un problema lógico que obliga a "deshacer" (para el video)
-            throw new RuntimeException("Simulando fallo lógico tras insertar: debe verse el rollback en la demo");
+            validarLibro(libro);
+            validarFicha(ficha);
+
+            Long libroId = libroDao.crear(conn, libro);
+            libro.setId(libroId);
+
+            ficha.setLibroId(libroId);
+            fichaDao.crear(conn, ficha);
+
+            // === ERROR SIMULADO ===
+            // Nota: lanzamos esta excepcion "a mano" despues de crear ambas cosas
+            // para que se vea claro el rollback en la demo.
+            throw new RuntimeException("Error simulado para mostrar rollback (no debe persistir nada).");
+
+            // conn.commit();  // <- no se ejecuta nunca en este metodo
+
         } catch (Exception e) {
-            // En una demo, capturamos y mostramos el mensaje; en un caso real, podríamos registrar logs.
-            throw new RuntimeException(e);
+            rollbackConMensaje(conn, "Ocurrio un error, ejecutando rollback simulado...");
+            throw new RuntimeException("Rollback simulado OK: " + e.getMessage(), e);
+        } finally {
+            restaurarYCerrar(conn);
         }
     }
-
-    // =========================================================
-    // BÚSQUEDA POR CAMPO RELEVANTE (ISBN) — pedido por la consigna
-    // =========================================================
 
     /**
-     * Devuelve el Libro activo asociado a una Ficha cuyo ISBN coincida.
-     * - Valida que el ISBN venga informado.
-     * - Delega la búsqueda en el DAO (JOIN l + f).
-     * - No usa autocommit=false porque es lectura simple.
+     * Actualizacion coherente de Libro + Ficha en una sola transaccion.
+     * (dejado como ejemplo por si lo usamos en la defensa)
      */
-    public Libro buscarPorIsbn(String isbn) throws Exception {
-        if (isbn == null || isbn.isBlank())
-            throw new IllegalArgumentException("ISBN obligatorio");
+    public void actualizarConFicha(Libro libro, FichaBibliografica ficha) throws Exception {
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
 
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            return libroDao.buscarPorIsbn(conn, isbn);
+            validarLibro(libro);
+            validarFicha(ficha);
+
+            // Por las dudas, si no viene seteada la FK desde UI:
+            if (ficha.getLibroId() == null) {
+                ficha.setLibroId(libro.getId());
+            }
+
+            boolean ok1 = libroDao.actualizar(conn, libro);
+            boolean ok2 = fichaDao.actualizar(conn, ficha);
+
+            if (!ok1 || !ok2) {
+                throw new RuntimeException("No se pudo actualizar Libro y/o Ficha");
+            }
+
+            conn.commit();
+        } catch (Exception e) {
+            rollbackSilencioso(conn);
+            throw new RuntimeException("Error actualizando Libro+Ficha (rollback): " + e.getMessage(), e);
+        } finally {
+            restaurarYCerrar(conn);
         }
     }
 
-    // =========================================================
-    // UTILIDADES DE TRANSACCIÓN / CONEXIÓN (para no repetir código)
-    // =========================================================
+    /* =========================================================
+       Validaciones minimas
+       ========================================================= */
 
-    /** Intenta hacer rollback, pero sin romper si ya se cayó la conexión. */
+    private void validarLibro(Libro libro) {
+        if (libro == null) throw new IllegalArgumentException("Libro no puede ser null");
+        if (libro.getTitulo() == null || libro.getTitulo().isBlank())
+            throw new IllegalArgumentException("Titulo obligatorio");
+        if (libro.getAutor() == null || libro.getAutor().isBlank())
+            throw new IllegalArgumentException("Autor obligatorio");
+        // podes sumar: anioEdicion entre 1400 y YEAR(now()), etc.
+    }
+
+    private void validarFicha(FichaBibliografica ficha) {
+        if (ficha == null) throw new IllegalArgumentException("Ficha no puede ser null");
+        if (ficha.getIsbn() == null || ficha.getIsbn().isBlank())
+            throw new IllegalArgumentException("ISBN obligatorio");
+    }
+
+    /* =========================================================
+       Utiles de transaccion/Connection (para no repetir)
+       ========================================================= */
+
     private void rollbackSilencioso(Connection conn) {
         if (conn != null) {
             try { conn.rollback(); } catch (SQLException ignored) {}
         }
     }
 
-    /** Restablece autocommit y cierra la conexión de forma segura. */
+    private void rollbackConMensaje(Connection conn, String msg) {
+        if (conn != null) {
+            try {
+                System.out.println(msg);
+                conn.rollback();
+                System.out.println("Rollback OK: la BD quedo igual que antes.");
+            } catch (SQLException ex) {
+                System.err.println("Error al hacer rollback: " + ex.getMessage());
+            }
+        }
+    }
+
     private void restaurarYCerrar(Connection conn) {
         if (conn != null) {
             try {
                 conn.setAutoCommit(true);
                 conn.close();
             } catch (SQLException ignored) {}
+        }
+    }
+
+    private void cerrarSilencioso(Connection conn) {
+        if (conn != null) {
+            try { conn.close(); } catch (SQLException ignored) {}
         }
     }
 }
