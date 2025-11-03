@@ -1,61 +1,46 @@
 package LibroFicha_main;
 
-import LibroFicha_config.DatabaseConnection;
-import LibroFicha_dao.LibroDao;
-import LibroFicha_dao.FichaBibliograficaDao;
-import LibroFicha_entities.Libro;
-import LibroFicha_entities.FichaBibliografica;
-import LibroFicha_service.LibroService;
-
 import java.sql.Connection;
-import java.util.List;
+import java.sql.SQLException;
+import LibroFicha_config.DatabaseConnection;
 
+/**
+ * Main del TFI de Programación 2 (Grupo 83)
+ * -----------------------------------------
+ * - Objetivo: iniciar la aplicación y (opcional) mostrar una prueba breve de conexión.
+ * - La app usa arquitectura por capas:
+ *      entities -> dao -> service -> main
+ * - Este Main NO hace lógica de negocio: sólo verifica conexión y llama al menú (AppMenu).
+ *
+ * Nota de integración:
+ * - El paquete SeguridadBD.integracionBDI pertenece al TFI de Bases de Datos I (consultas seguras, DTO, etc.).
+ *   En este TFI de Programación 2 no usamos esas clases; se conservan sólo para mostrar integración entre materias.
+ */
 public class Main {
     public static void main(String[] args) {
 
-        try {
-            // 1️⃣ Instanciar DAOs y Service
-            LibroDao libroDao = new LibroDao();
-            FichaBibliograficaDao fichaDao = new FichaBibliograficaDao();
-            LibroService libroService = new LibroService(libroDao, fichaDao);
-
-            // 2️⃣ Crear libro
-            Libro libro = new Libro();
-            libro.setEliminado(false);
-            libro.setTitulo("Cien años de soledad");
-            libro.setAutor("Gabriel García Márquez");
-            libro.setEditorial("Editorial Sudamericana");
-            libro.setAnioEdicion(1967);
-
-            // 3️⃣ Insertar libro usando tu LibroService
-            libroService.insertar(libro); // solo inserta libro
-
-            // 4️⃣ Crear ficha y asignar libroId
-            FichaBibliografica ficha = new FichaBibliografica();
-            ficha.setEliminado(false);
-            ficha.setIsbn("978-3-16-148411-7"); // 🔹 cambiado para evitar duplicados
-            ficha.setClasificacionDewey("863.6");
-            ficha.setEstanteria("Estantería A1");
-            ficha.setIdioma("Español");
-            ficha.setLibroId(libro.getId());
-
-            // 5️⃣ Insertar ficha usando DatabaseConnection directamente
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                fichaDao.crear(conn, ficha);
+        // =========================================================
+        // TEST DE CONEXIÓN (para el video / diagnóstico rápido)
+        // =========================================================
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            if (conn != null) {
+                System.out.println("Conexión exitosa a la base de datos TPI_Libro_Ficha.");
+            } else {
+                System.out.println("No se pudo establecer la conexión (conn == null).");
             }
-
-            System.out.println("Libro insertado: " + libro);
-            System.out.println("Ficha insertada: " + ficha);
-
-            // 6️⃣ Listar todos los libros
-            List<Libro> libros = libroService.getAll();
-            System.out.println("\nTodos los libros:");
-            for (Libro l : libros) {
-                System.out.println(l);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            // Opción A: continuar igual, porque cada opción del menú abre su propia conexión.
+            System.out.println("Advertencia: Falló el test de conexión: " + e.getMessage());
+            // Opción B (si preferimos salir al fallar):
+            // System.out.println("Error de conexión. Revise db.properties y los scripts SQL.");
+            // return;
         }
+
+        // =========================================================
+        // EJECUCIÓN DEL MENÚ PRINCIPAL DEL TFI (capa de presentación)
+        // =========================================================
+        new AppMenu().iniciar();
     }
 }
+
+ 
