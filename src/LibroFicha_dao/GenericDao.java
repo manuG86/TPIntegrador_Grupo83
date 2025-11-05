@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 package LibroFicha_dao;
 
 import java.sql.Connection;
@@ -54,4 +53,4 @@ public interface GenericDao<T> {
     /** Eliminacion logica (eliminado = TRUE). Devuelve true si afecto 1 fila. */
     boolean eliminar(Connection conn, long id);
 }
->>>>>>> Damian
+

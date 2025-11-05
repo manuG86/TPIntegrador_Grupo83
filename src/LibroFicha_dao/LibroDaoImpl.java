@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 package LibroFicha_dao;
 
 import java.sql.*;
@@ -330,4 +329,3 @@ public class LibroDaoImpl implements GenericDao<Libro> {
     }
 }
 
->>>>>>> Damian

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 package LibroFicha_config;
 
 import java.io.InputStream;
@@ -88,4 +87,3 @@ public class DatabaseConnection {
         return DriverManager.getConnection(url, user, pass);
     }
 }
->>>>>>> Damian

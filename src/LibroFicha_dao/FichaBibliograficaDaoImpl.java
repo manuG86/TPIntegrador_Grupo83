@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 package LibroFicha_dao;
 
 import LibroFicha_entities.FichaBibliografica;
@@ -308,4 +307,4 @@ public class FichaBibliograficaDaoImpl implements GenericDao<FichaBibliografica>
         return f;
     }
 }
->>>>>>> Damian
+
