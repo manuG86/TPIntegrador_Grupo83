@@ -1,2 +1,27 @@
+# === Archivos y carpetas que no deben versionarse ===
+
+# Carpetas de compilación
 /build/
-/dist/
+ /dist/
+
+# Configuración local de NetBeans
+/nbproject/private/
+
+# Archivos temporales del IDE
+*.class
+*.log
+*.tmp
+
+# Dependencias externas
+lib/*.jar
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de copia de seguridad
+*~
+
+.DS_Store
+nbproject/private/
+
