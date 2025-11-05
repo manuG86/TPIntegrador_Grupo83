@@ -87,15 +87,13 @@ TPIntegrador_Grupo83/
 │   ├── LibroFicha_service/
 │   ├── LibroFicha_config/
 │   ├── LibroFicha_main/
+|   ├── db.properties
 │   └── SeguridadBD/integracionBDI/
 │
 ├── sql/
 │   ├── tpi_libro_ficha_schema.sql
 │   ├── tpi_libro_ficha_data.sql
 │   └── README_crear_BBDD.txt
-│
-├── resources/
-│   └── db.properties
 │
 └── docs/
     ├── UML_final.png  
