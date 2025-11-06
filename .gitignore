@@ -1,27 +1,29 @@
-# === Archivos y carpetas que no deben versionarse ===
+# ============================================
+#   GITIGNORE - TPIntegrador_Grupo83 (UTN)
+#   Compatible con NetBeans (Ant)
+#   Corregido para que al clonar el repositorio lo veamos como "Project"
+# ============================================
 
-# Carpetas de compilación
+# --- Carpetas de compilación ---
 /build/
- /dist/
+/dist/
 
-# Configuración local de NetBeans
-/nbproject/private/
-
-# Archivos temporales del IDE
+# --- Archivos temporales del IDE ---
 *.class
 *.log
 *.tmp
 
-# Dependencias externas
-lib/*.jar
 
-# Archivos del sistema
+# --- Archivos del sistema ---
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Archivos de copia de seguridad
+# --- Archivos de copia de seguridad ---
 *~
 
-.DS_Store
-nbproject/private/
+# --- Archivos o carpetas que no deben subirse ---
+# /sql/pruebas_temp.sql
+# /docs/borradores/
+
 
