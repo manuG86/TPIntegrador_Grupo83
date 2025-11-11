@@ -218,22 +218,49 @@ public class LibroService implements GenericService<Libro> {
     }
 
     /**
-     * Variante con "rollback simulado" para mostrar en el video del TFI.
-     * La idea es provocar un error luego de hacer las operaciones, para ver el rollback en acción.
-     * (Podemos adaptarlo para forzar una excepción en el medio y mostrar cómo NO queda nada en BD).
+     * Variante con "rollback SIMULADO" para mostrar en el video del TFI.
+     * La idea es:
+     *  - Hacer exactamente lo mismo que insertarConFicha (Libro + Ficha en una transacción),
+     *  - pero lanzar una excepción ANTES del commit,
+     *  - para que se ejecute el rollback y NO quede nada insertado en la BD.
      */
-    public void insertarConFichaConRollbackSimulado(Libro libro, FichaBibliografica ficha) {
-        try {
-            // Reutilizamos la operación compuesta normal
-            insertarConFicha(libro, ficha);
+    public void insertarConFichaConRollbackSimulado(Libro libro, FichaBibliografica ficha) throws Exception {
+        // Usamos las mismas validaciones que en la operación normal
+        validarLibro(libro);
+        validarFicha(ficha);
 
-            // Simulamos un problema lógico que obliga a "deshacer" (para el video)
-            throw new RuntimeException("Simulando fallo lógico tras insertar: debe verse el rollback en la demo");
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false); // 1) inicio de transacción
+
+            // 2) Creo Libro y obtengo id
+            Long libroId = libroDao.crear(conn, libro);
+            libro.setId(libroId);
+
+            // 3) Vinculo Ficha con Libro (FK única libro_id)
+            ficha.setLibroId(libroId);
+
+            // 4) Creo Ficha
+            fichaDao.crear(conn, ficha);
+
+            // 5) Simulamos un fallo lógico ANTES del commit
+            throw new RuntimeException("Simulando fallo lógico ANTES del commit (se debe ver el rollback).");
+
+            // NOTA: el commit NUNCA se ejecuta
+            // conn.commit();
+
         } catch (Exception e) {
-            // En una demo, capturamos y mostramos el mensaje; en un caso real, podríamos registrar logs.
-            throw new RuntimeException(e);
+            // Si algo falla, volvemos todo atrás
+            rollbackSilencioso(conn);
+            // Y avisamos de forma clara para la demo
+            throw new RuntimeException("Rollback SIMULADO ejecutado: " + e.getMessage(), e);
+        } finally {
+            // Dejamos la conexión en un estado consistente y la cerramos
+            restaurarYCerrar(conn);
         }
     }
+
 
     // =========================================================
     // BÚSQUEDA POR CAMPO RELEVANTE (ISBN) — pedido por la consigna

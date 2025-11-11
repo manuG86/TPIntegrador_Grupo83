@@ -32,6 +32,7 @@ public class AppMenu {
                     case 4 -> opcionEliminarLibro();
                     case 5 -> opcionBuscarPorId();
                     case 6 -> opcionBuscarPorIsbn();
+                    case 7 -> opcionInsertarLibroConFichaConRollbackSimulado();
                     case 0 -> System.out.println("Saliendo...");
                     default -> System.out.println("Opción inválida.");
                 }
@@ -52,6 +53,7 @@ public class AppMenu {
         System.out.println("4) Eliminar Libro (baja lógica + su Ficha)");
         System.out.println("5) Buscar Libro por ID");
         System.out.println("6) Buscar Libro por ISBN  (JOIN con Ficha)");
+        System.out.println("7) Insertar Libro + Ficha (rollback SIMULADO para demo)");
         System.out.println("0) Salir");
         System.out.print("Elija una opción: ");
     }
@@ -186,7 +188,48 @@ public class AppMenu {
         if (l == null) System.out.println("(no se encontró un Libro activo con ese ISBN)");
         else System.out.println("Encontrado: " + l);
     }
+    
+    
+    /**
+     * Opción 7: Insertar Libro + Ficha provocando un "rollback simulado".
+     * Pensada para la demo del TPI:
+     *  - Pide exactamente los mismos datos que la opción 2.
+     *  - Llama a service.insertarConFichaConRollbackSimulado(...),
+     *    que fuerza una excepción para mostrar el comportamiento
+     *    de la transacción en pantalla.
+     */
+    private void opcionInsertarLibroConFichaConRollbackSimulado() throws Exception {
+        System.out.println("\n== DEMO: Insertar Libro + Ficha con ROLLBACK SIMULADO ==\n");
 
+        // 1) Pedimos los datos del Libro (igual que en la opción 2)
+        Libro libro = new Libro();
+        libro.setEliminado(false); // por defecto, activo
+        System.out.print("Título (obligatorio): ");
+        libro.setTitulo(leerTextoObligatorio());
+        System.out.print("Autor (obligatorio): ");
+        libro.setAutor(leerTextoObligatorio());
+        System.out.print("Editorial (opcional): ");
+        libro.setEditorial(leerTextoOpcional());
+        System.out.print("Año de edición (opcional, ENTER para omitir): ");
+        Integer anio = leerEnteroOpcional();
+        libro.setAnioEdicion(anio);
+
+        // 2) Pedimos los datos de la Ficha (igual que en la opción 2)
+        FichaBibliografica ficha = new FichaBibliografica();
+        ficha.setEliminado(false);
+        System.out.print("ISBN (obligatorio, 10/13 dígitos, admite guiones): ");
+        ficha.setIsbn(leerTextoObligatorio());
+        System.out.print("Clasificación Dewey (opcional): ");
+        ficha.setClasificacionDewey(leerTextoOpcional());
+        System.out.print("Estantería (opcional): ");
+        ficha.setEstanteria(leerTextoOpcional());
+        System.out.print("Idioma (opcional): ");
+        ficha.setIdioma(leerTextoOpcional());
+
+        // 3) Llamamos al Service en modo "rollback simulado"
+        service.insertarConFichaConRollbackSimulado(libro, ficha);
+    }
+    
     // -------------------------------------------------------------
     // HELPERS de entrada (IO)
     // -------------------------------------------------------------
@@ -241,4 +284,5 @@ public class AppMenu {
         }
     }
 }
+
 
